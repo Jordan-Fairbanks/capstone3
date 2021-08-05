@@ -1,0 +1,8 @@
+{% extends "layout.html" %}
+{% block content %}
+<form action='/results' method='post'>
+<label for='user_id'>User ID:</label>
+<input type=number name='user_id' id='user_id' placeholder="e.g. 123456">
+<input type=submit value=Submit>
+</form>
+{% endblock content %}

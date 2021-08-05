@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% block content %}
+<table>
+<th></th>
+<th>ID</th>
+<th>NAME</th>
+<th>DESCRIPTION</th>
+<th>INGREDIENTS</th>
+ {% for index,row in df.iterrows() %}
+  <tr> <td>{{index + 1}}</td>
+        {%for col in df.columns%}
+        <td>{{row[col]}}</td>
+        {% endfor %}
+  </tr>
+ {% endfor %}
+</table>
+
+
+{% endblock content %}

@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<form action='/recommend' method='post'>
+    <table>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Description</th>
+        <th>Ingredients</th>
+        <th>Your Rating</th>
+        {% for ind, row in df.iterrows()%}
+            <tr>
+            {% for col in df.columns %}
+                <td>{{row[col]}}</td>
+            {% endfor %}
+                <td><label for="{{ind}}">Rating</label><br>
+                    <input type="number" min=1 max=5 name="{{ind}}">    
+                </td>
+            </tr>
+        {% endfor %}
+    </table>
+    <input type='submit' value="Make Recommendations">
+</form>
+
+
+{% endblock content %}
