@@ -10,7 +10,8 @@
         <th>Your Rating</th>
         {% for ind, row in df.iterrows()%}
             <tr>
-            {% for col in df.columns %}
+                <td><input type=number name=id{{ind}} value={{row["id"]}}> </td>
+            {% for col in df.columns[1:] %}
                 <td>{{row[col]}}</td>
             {% endfor %}
                 <td><label for="{{ind}}">Rating</label><br>
@@ -19,6 +20,14 @@
             </tr>
         {% endfor %}
     </table>
+    <select name='select_model'>
+        <option name='svd' value='svd'>SVD</option>
+        <option name='nmf' value='nmf'>NMF</option>
+        <option name='knnb' value='knnb'>KNN Basic</option> 
+        <option name='knnwm' value='knnwm'>KNN With Means</option> 
+        <option name='coclust' value='coclust'>CoClustering</option> 
+        <option name='slope1' value='slope1'>Slope One</option>  
+    </select>
     <input type='submit' value="Make Recommendations">
 </form>
 

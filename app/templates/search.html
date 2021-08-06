@@ -3,6 +3,14 @@
 <form action='/results' method='post'>
 <label for='user_id'>User ID:</label>
 <input type=number name='user_id' id='user_id' placeholder="e.g. 123456">
+<select name='model'>
+    <option name='svd' value='svd'>SVD</option>
+    <option name='nmf' value='nmf'>NMF</option>
+    <option name='knnb' value='knnb'>KNN Baisc</option> 
+    <option name='knnwm' value='knnwm'>KNN With Means</option>
+    <option name='coclust' value='coclust'>CoClustering</option> 
+    <option name='slope1' value='slope1'>Slope One</option>    
+</select><br>
 <input type=submit value=Submit>
 </form>
 {% endblock content %}
