@@ -59,3 +59,6 @@ Finally, by entering a user id of a previously known user (what happens behind t
 - Keep track of previous meal and cooking techniques seen by each user
 - Add a way to keep track of inventory before making suggestions for ingredients
 
+## Video Presentation/App Demo
+
+Check out [this youtube video](https://youtu.be/Oc5_oisOJIg) for a short presentation and demo of the app.
