@@ -23,7 +23,6 @@ def features_as_string(row):
     return string[:-2]
 
 
-
 if __name__ == "__main__":
     
     # Establish connection to database
