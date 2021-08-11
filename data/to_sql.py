@@ -1,6 +1,4 @@
 import pandas as pd
-import numpy as np
-import pickle
 import psycopg2 as pg2
 from re import sub
 
@@ -33,21 +31,6 @@ if __name__ == "__main__":
     cur = conn.cursor()
     print('CONNECTION ESTABLISHED\n-----------------')
     
-    # # create tables
-    # try:
-    #     cur.execute("CREATE TABLE IF NOT EXISTS recipes(id_num INTEGER,\
-    #                                                 index_id INTEGER,\
-    #                                                 name_tokens VARCHAR,\
-    #                                                 ingredient_tokens VARCHAR,\
-    #                                                 steps_tokens VARCHAR,\
-    #                                                 techniques VARCHAR,\
-    #                                                 calorie_level INTEGER,\
-    #                                                 ingredient_ids VARCHAR)")
-    # except (Exception, pg2.DatabaseError) as error:
-    #     print("Error: %s" % error)
-    #     conn.rollback()
-    #     print('Could not create table: recipes')
-    
     try:
         cur.execute("CREATE TABLE IF NOT EXISTS raw_recipes(name VARCHAR,\
                                                             id INTEGER,\
@@ -66,30 +49,6 @@ if __name__ == "__main__":
         conn.rollback()
         print('Could not create table: raw_recipes')
         
-    # try:
-    #     cur.execute("CREATE TABLE IF NOT EXISTS users(u INTEGER,\
-    #                                               techniques VARCHAR,\
-    #                                               items VARCHAR,\
-    #                                               n_items INTEGER,\
-    #                                               ratings VARCHAR,\
-    #                                               n_ratings INTEGER)")
-    # except (Exception, pg2.DatabaseError) as error:
-    #     print("Error: %s" % error)
-    #     conn.rollback()
-    #     print('Could not create table: users')
-    
-    # try:
-    #     cur.execute("CREATE TABLE IF NOT EXISTS ingredients(raw_ingr VARCHAR,\
-    #                                                         raw_words INTEGER,\
-    #                                                         processed VARCHAR,\
-    #                                                         len_proc INTEGER,\
-    #                                                         replaced VARCHAR,\
-    #                                                         count INTEGER,\
-    #                                                         idn INTEGER)")
-    # except (Exception, pg2.DatabaseError) as error:
-    #     print("Error: %s" % error)
-    #     conn.rollback()
-    #     print('Could not create table: interactions')
     
     try:
         cur.execute("CREATE TABLE IF NOT EXISTS interactions(user_id INTEGER,\
@@ -105,73 +64,10 @@ if __name__ == "__main__":
     conn.commit()
     
     # read in csv files
-    # recipes = pd.read_csv('data/PP_recipes.csv')
     raw_recipes = pd.read_csv('data/RAW_recipes.csv')
-    # users = pd.read_csv('data/PP_users.csv')
-    # ingredient_map = pickle.load(open('data/ingr_map.pkl','rb'))
     interactions = pd.read_csv('data/RAW_interactions.csv')
     interactions.fillna('None', inplace=True)
-    # write data to recipes table
-    i = 0
-    # for _, row in recipes.iterrows():
-    #     try:
-    #         cur.execute("""INSERT INTO recipes(id_num,
-    #                                          index_id, 
-    #                                          name_tokens, 
-    #                                          ingredient_tokens,
-    #                                          steps_tokens,
-    #                                          techniques,
-    #                                          calorie_level, 
-    #                                          ingredient_ids) 
-    #                      VALUES(%s)""" % features_as_string(row))
-    #         i += 1
-    #     except (Exception, pg2.DatabaseError) as error:
-    #         print("Error: %s" % error)
-    #         conn.rollback()
-    #         print('Could not insert row into TABLE recipes')
-    #     conn.commit()
-        
-    print(f"{i} items INSERTED INTO TABLE recipes")
-    
-    # write data to users table
-    i = 0
-    # for _, row in users.iterrows():
-    #     try:
-    #         cur.execute("""INSERT INTO users(u,\ 
-    #                                        techniques,\ 
-    #                                        items,\ 
-    #                                        n_items,\ 
-    #                                        ratings,\ 
-    #                                        n_ratings)\ 
-    #                      VALUES(%s)""" % features_as_string(row))
-    #         i += 1
-    #     except (Exception, pg2.DatabaseError) as error:
-    #         print("Error: %s" % error)
-    #         conn.rollback()
-    #         print('Could not insert row into TABLE users')
-    #     conn.commit()
-    
-    print(f"{i} items INSERTED INTO TABLE users")
-    
-    # write data to ingredients table
-    i = 0
-    # for _, row in ingredient_map.iterrows():
-    #     try:
-    #         cur.execute("""INSERT INTO ingredients(raw_ingr,\
-    #                                              raw_words,\
-    #                                              processed,\
-    #                                              len_proc,\
-    #                                              replaced,\
-    #                                              count,\
-    #                                              idn) 
-    #                      VALUES(%s)""" % features_as_string(row))
-    #         i += 1
-    #     except (Exception, pg2.DatabaseError) as error:
-    #         print("Error: %s" % error)
-    #         conn.rollback()
-    #         print('Could not insert row into TABLE ingredients')
-    #     conn.commit()
-    # print(f"{i} items INSERTED INTO TABLE ingredients")
+
 
     # write data to interactions table
     i = 0
