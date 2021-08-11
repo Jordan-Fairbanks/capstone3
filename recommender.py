@@ -1,41 +1,14 @@
-from numpy.core.numeric import full
 import pandas as pd
 import numpy as np
+import psycopg2 as pg2
+from collections import defaultdict
+import os
 from surprise import dataset, dump, KNNBasic, KNNWithMeans, SlopeOne, CoClustering
 from surprise.model_selection.validation import cross_validate
 from surprise.prediction_algorithms.matrix_factorization import SVD, NMF
 from surprise.reader import Reader 
-import psycopg2 as pg2
-from collections import defaultdict
-from re import sub
-import os
 
-# taken from surprise FAQ page
-def get_top_n(predictions, n=10):
-    """Return the top-N recommendation for each user from a set of predictions.
 
-    Args:
-        predictions(list of Prediction objects): The list of predictions, as
-            returned by the test method of an algorithm.
-        n(int): The number of recommendation to output for each user. Default
-            is 10.
-
-    Returns:
-    A dict where keys are user (raw) ids and values are lists of tuples:
-        [(raw item id, rating estimation), ...] of size n.
-    """
-
-    # First map the predictions to each user.
-    top_n = defaultdict(list)
-    for uid, iid, true_r, est, _ in predictions:
-        top_n[uid].append((iid, est))
-
-    # Then sort the predictions for each user and retrieve the k highest ones.
-    for uid, user_ratings in top_n.items():
-        user_ratings.sort(key=lambda x: x[1], reverse=True)
-        top_n[uid] = user_ratings[:n]
-
-    return top_n
 
 def array_to_string(arr):
     """
@@ -64,11 +37,11 @@ def train_and_test_model(trainset, model):
     takes a surprise model with a trainset object and a testset object,
     trains the model, then returns the predictions from the test set 
     """
-    test_ids = [419298, 102114, 297701, 232044, 271471, 217489, 493687, 82998, 471951, 109146]
+    test_ids = [419298, 102114, 297701, 232044, 271471, 217489, 493687, 82998, 471951, 109146, 96210, 444189]
     model.fit(trainset)
     inner_uids = trainset.all_users()
     raw_uids = [trainset.to_raw_uid(user) for user in inner_uids]
-    predictions = np.zeros((len(raw_uids),10))
+    predictions = np.zeros((len(raw_uids),12))
     for i,uid in enumerate(raw_uids):
         for j, iid in enumerate(test_ids):
             predictions[i][j] = model.predict(uid, iid)[3]
@@ -111,7 +84,7 @@ def insert_predictions(table, predictions, uids):
     inserts predictions into a sql table
     """
     columns = """uid, r_419298, r_102114, r_297701, r_232044, r_271471, 
-               r_217489, r_493687, r_82998, r_471951, r_109146"""
+               r_217489, r_493687, r_82998, r_471951, r_109146, r_96210, r_444189"""
     i = 0
     for prediction, uid in zip(predictions, uids):
         cur.execute(f"""INSERT INTO {table}({columns})
@@ -137,6 +110,33 @@ def insert_recommendations(table, recommendations):
     print(f"INSERTED {i} ROWS INTO TABLE {table}")
     return 
 
+# taken from surprise FAQ page
+def get_top_n(predictions, n=10):
+    """Return the top-N recommendation for each user from a set of predictions.
+
+    Args:
+        predictions(list of Prediction objects): The list of predictions, as
+            returned by the test method of an algorithm.
+        n(int): The number of recommendation to output for each user. Default
+            is 10.
+
+    Returns:
+    A dict where keys are user (raw) ids and values are lists of tuples:
+        [(raw item id, rating estimation), ...] of size n.
+    """
+
+    # First map the predictions to each user.
+    top_n = defaultdict(list)
+    for uid, iid, true_r, est, _ in predictions:
+        top_n[uid].append((iid, est))
+
+    # Then sort the predictions for each user and retrieve the k highest ones.
+    for uid, user_ratings in top_n.items():
+        user_ratings.sort(key=lambda x: x[1], reverse=True)
+        top_n[uid] = user_ratings[:n]
+
+    return top_n
+
 if __name__ == "__main__":
     # Establish connection to database
     conn = pg2.connect(dbname='Food', user='postgres', password='galvanize', host='localhost', port='5432')
@@ -158,6 +158,7 @@ if __name__ == "__main__":
     # generate sparse matrix
     sparse_matrix = pd.DataFrame(data=interactions, columns=['user_id','recipe_id','rating'] )
     print('SPARSE MARTRIX CREATED...')
+    sparse_matrix['rating'][sparse_matrix['rating'] < 1] = .01
 
     # set up surprise dataset object
     reader = Reader(sep=',', rating_scale=(1,5))
@@ -178,9 +179,9 @@ if __name__ == "__main__":
     svd_predictions, raw_uids = train_and_test_model(trainset, svd)
     print('SVD MODEL TRAINED. PREDICTIONS MADE...')
 
-    # nmf = NMF(biased=True)
-    # nmf_predictions,_ = train_and_test_model(trainset, nmf)
-    # print('NMF MODEL TRAINED. PREDICTIONS MADE...')
+    nmf = NMF(biased=True)
+    nmf_predictions,_ = train_and_test_model(trainset, nmf)
+    print('NMF MODEL TRAINED. PREDICTIONS MADE...')
 
     knnb = KNNBasic(k=20, verbose=False)
     knnb_predictions,_= train_and_test_model(trainset, knnb)
@@ -200,7 +201,7 @@ if __name__ == "__main__":
 
     path = "~/Desktop/coding/galvanize/dsi/capstones/capstone3/models/"
     dump_model(svd, 'SVD_model', path)
-    #dump_model(nmf, 'NMF_model', path)
+    dump_model(nmf, 'NMF_model', path)
     dump_model(knnb, 'KNNBasic_model',path)
     dump_model(knnwm, 'KNNWithMeans_model',path)
     dump_model(coclust, 'CoClustering_model',path)
@@ -217,7 +218,7 @@ if __name__ == "__main__":
 
     # set up predictions columns in sql table
     columns = """uid INTEGER,r_419298 NUMERIC, r_102114 NUMERIC, r_297701 NUMERIC, r_232044 NUMERIC, r_271471 NUMERIC, 
-               r_217489 NUMERIC, r_493687 NUMERIC, r_82998 NUMERIC, r_471951 NUMERIC, r_109146 NUMERIC"""    
+               r_217489 NUMERIC, r_493687 NUMERIC, r_82998 NUMERIC, r_471951 NUMERIC, r_109146 NUMERIC, r_96210 NUMERIC, r_444189 NUMERIC"""    
     # create tables 
     create_table('svd_predictions', columns)
     create_table('nmf_predictions', columns)
@@ -229,7 +230,7 @@ if __name__ == "__main__":
 
     # insert predictions into table
     insert_predictions('svd_predictions', svd_predictions, raw_uids)
-    #insert_predictions('nmf_predictions', knnb_predictions, raw_uids)
+    insert_predictions('nmf_predictions', knnb_predictions, raw_uids)
     insert_predictions('knnb_predictions', knnb_predictions, raw_uids)
     insert_predictions('knnwm_predictions', knnwm_predictions, raw_uids)
     insert_predictions('coclust_predictions', coclust_predictions, raw_uids)
@@ -239,8 +240,6 @@ if __name__ == "__main__":
     num_users = trainset.n_users
     num_items = trainset.n_items
     print(f"UNIQUE USERS IN TABLE: {num_users}\nUNIQUE ITEMS IN TABLE: {num_items}")
-
-
     
 	# close connection
     conn.close()
@@ -250,9 +249,9 @@ if __name__ == "__main__":
     print('SVD\n----------')
     cross_validate(svd, data, verbose=True)
     print('----------\n')
-    # print('NMF\n----------')
-    # cross_validate(nmf, data, verbose=True)
-    # print('----------\n')
+    print('NMF\n----------')
+    cross_validate(nmf, data, verbose=True)
+    print('----------\n')
     print('KNN Basic\n----------')
     cross_validate(knnb, data, verbose=True)
     print('----------\n')

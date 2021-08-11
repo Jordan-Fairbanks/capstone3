@@ -1,0 +1,33 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<style>
+.card {
+    width:70vw;
+    position: absolute;
+    left:12em;
+    margin-top: 10em;
+}
+.recipe-name {
+    font-weight:bold;
+    text-decoration: underline;
+    font-size: 20px;
+    padding:2em;
+}
+.label {
+    text-align:center;
+}
+</style>
+<div class="card">
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item text-center recipe-name">{{recipe['name']}}</li>
+      <li class="list-group-item text-center"><p class='label'><strong><u>Description:</u></strong></p><p>{{recipe['description']}}</p></li>
+      <li class="list-group-item text-center"><p class='label'><strong><u>Nutrition Facts:</u></strong></p><p><strong>Calories:</strong>{{recipe['nutrition'][0]}}<br> % Daily Values: <br> <strong>fat:</strong>{{recipe['nutrition'][1]}}% <strong>sugar:</strong>{{recipe['nutrition'][2]}}% <strong>sodium:</strong> {{recipe['nutrition'][3]}}% <strong>protein:</strong> {{recipe['nutrition'][4]}}% <strong>saturated fat:</strong>{{recipe['nutrition'][5]}}%</p></li>
+      <li class="list-group-item text-center"><p class='label'><strong><u>Ingredients:</u></strong></p><p>{{recipe['ingredients']}}</p></li>
+      <li class="list-group-item text-center"><p class='label'><strong><u>Directions:</u></strong></p><p>{{recipe['steps']}}</p></li>
+      <li class="list-group-item text-center"><p class='label'><strong><u>Estimated Time:</u></strong></p><p>{{recipe['minutes']}} minutes</p></li>
+      <li class="list-group-item text-center"><p class='label'><strong><u>Tags:</u></strong></p><p>{{recipe['tags']}}</p></li>
+    </ul>
+  </div>
+
+{% endblock %}

@@ -1,25 +1,110 @@
 {% extends "layout.html" %}
-
 {% block content %}
+<style>
+    img{
+        height:10em;
+        width:100%
+    }
+    input {
+        position:absolute;
+        bottom:0em;
+        margin-left: auto;
+        margin-right:auto;
+    }
+    label{
+        position:absolute;
+        bottom:1.8em;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .dropdown-title{
+        position:relative;
+        color:white;
+        bottom:-2em;
+        left:9em;
+    }
+    select {
+        text-align:center;
+        width:18em;
+        position: relative;
+        bottom:3em;
+        left: 12em;
+    }
+    input[type=submit] {
+        position: relative;
+        bottom: 2em;
+        left:8em;
+        width: 15em;
+        height: 5em;
+        color:white;
+        font-size:30px;
+        background-color: #1E90FF;
+        border-radius: 5px;
+        text-decoration: none;
+        border:none;
+    }
+.container{
+    height:100%;
+    width:100%;
+}
+h4 {
+    padding-top: 3em;
+    text-align:center;
+    color:white;
+    text-decoration: underline;
+    font-weight: bold;
+}
+</style>
+<h4>Rate each item on a scale from 1 (would never eat) to 5 (would love to eat) <br> for a personalized recommendation</h4>
 <form action='/recommend' method='post'>
-    <table>
-        <th>ID</th>
-        <th>Name</th>
-        <th>Description</th>
-        <th>Ingredients</th>
-        <th>Your Rating</th>
-        {% for ind, row in df.iterrows()%}
-            <tr>
-                <td><input type=number name=id{{ind}} value={{row["id"]}}> </td>
-            {% for col in df.columns[1:] %}
-                <td>{{row[col]}}</td>
-            {% endfor %}
-                <td><label for="{{ind}}">Rating</label><br>
-                    <input type="number" min=1 max=5 name="{{ind}}">    
-                </td>
-            </tr>
+    <div class="container">
+        <div class="row">
+        {% for ind, row in df[:3].iterrows()%}
+            <div class="col-4 g-0">
+                <div class="card" style="width: 18rem; height: 30rem; margin: 3em;">
+                    <img src={{imgs[ind]}} class="card-img-top" alt="food image">
+                    <div class="card-body">
+                        <h5 class="card-title">{{row['name']}}</h5>
+                        <p class="card-text">{{row['ingredients']}}</p>
+                        <label for=id{{ind}}><strong>Your Rating:</strong></label>
+                        <input type=number name=id{{ind}}>
+                    </div>
+                </div>
+            </div>
         {% endfor %}
-    </table>
+        </div>
+
+        <div class="row">
+            {% for ind, row in df[3:6].iterrows() %}
+            <div class="col-4 g-0">    
+                <div class="card" style="width: 18rem; height: 30rem; margin: 3em;">
+                    <img src={{imgs[ind]}} class="card-img-top" alt="food image">
+                    <div class="card-body">
+                        <h5 class="card-title">{{row['name']}}</h5>
+                        <p class="card-text">{{row['ingredients']}}</p>
+                        <label for=id{{ind}}><strong>Your Rating:</strong></label>
+                        <input type=number name=id{{ind}}>
+                    </div>
+                </div>
+            </div> 
+        {% endfor %}
+        </div>
+    <div class="row">
+        {% for ind, row in df[6:].iterrows() %}
+        <div class="col-4 g-0">    
+            <div class="card" style="width: 18rem; height: 30rem; margin: 3em;">
+                <img src={{imgs[ind]}} class="card-img-top" alt="food image">
+                <div class="card-body">
+                    <h5 class="card-title">{{row['name']}}</h5>
+                    <p class="card-text">{{row['ingredients']}}</p>
+                    <label for=id{{ind}}><strong>Your Rating:</strong></label>
+                    <input type=number name=id{{ind}}>
+                </div>
+            </div>
+        </div>   
+    {% endfor %}
+    </div>
+    <h5 class='dropdown-title'>Select Recommendation Algorithm:</h5><br>
     <select name='select_model'>
         <option name='svd' value='svd'>SVD</option>
         <option name='nmf' value='nmf'>NMF</option>

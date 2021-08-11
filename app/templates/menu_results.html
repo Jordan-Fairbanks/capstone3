@@ -1,0 +1,87 @@
+{% extends "layout.html" %}
+{% block content %}
+
+<style>
+
+.carousel{
+    width:40vw;
+    height:80vh;
+    position: absolute;
+    left: 24em;
+    top: 20em;
+}
+.card-title{
+    font-size: 40px;
+    font-family: "Brush Script MT", cursive;
+    text-decoration: underline;
+}
+.card-subtitle{
+    font-size: 30px;
+    font-weight: 300;
+    font-family: "Brush Script MT", cursive;
+}
+ul{
+    list-style: none;
+    padding:0;
+    margin:0;
+}
+.card-text{
+    font-size: 20px;
+    font-weight: 300;
+    font-family: "Brush Script MT", cursive;
+}
+
+</style>
+
+<div class="container text-center" style="color:white;text-align:center;">
+    {% if user_id%}
+    <h1>User ID: {{user_id}}</h1><br>
+    {% endif%}
+    <h2>Model Used: {{model}}</h2><br>
+    <h5>5000 Recommendations generated in <strong>{{time}}</strong> seconds</h5>
+    <h5>Ingredients compiled in <strong>{{itime}}</strong>seconds</h5>
+</div>
+
+<div id="carouselExampleControls" class="carousel slide" data-bs-ride="carousel">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <div class="card text-center" style="width: 100%;">
+            <div class="card-body">
+              <h5 class="card-title">{{ingredients[0][0]}}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">Suggested Ingredients</h6>
+              <ul>
+                {% for item in ingredients[0][1]%}
+                <li><p class="card-text">{{item}}</p></li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+      </div>
+      {% for ing in ingredients[1:]%}
+      <div class="carousel-item">
+        <div class="card text-center" style="width: 100%;">
+            <div class="card-body">
+            <h5 class="card-title">{{ing[0]}}</h5>
+            <h6 class="card-subtitle mb-2 text-muted">Suggested Ingredients</h6>
+            <ul>
+              {% for item in ing[1]%}
+              <li><p class="card-text">{{item}}</p></li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleControls" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span>
+      <span class="visually-hidden">Next</span>
+    </button>
+  </div>
+
+  
+
+{% endblock content %}

@@ -1,7 +1,34 @@
-table, th, td {
-    border:1px solid black;
-    padding:2px;
-}
 
-footer {
+@font-face {
+    font-family: myscript;
+    src: url("BaroqueScript.ttf");
 }
+html{
+    height:100%;
+    width:100%;
+}
+body {
+    background-image: url("img/Arteagas-Mexican-Grocery-Store-Background.jpeg");
+    background-repeat:repeat-y;
+    overflow-x:hidden;
+    height:100%;
+}
+.header {
+    font-family: ;
+    background-color: #F1F1F1;
+    text-align: center;
+    padding: 20px;
+    opacity:.7 ;
+}
+ .nav {
+     background-color:#F1F1F1;
+     padding: 3px;
+     opacity:.7;
+ }
+ .nav-link {
+     color:black;
+ }
+ .nav-link:hover{
+     background-color: #919191;
+     color: black;
+ }

@@ -1,24 +1,101 @@
 {% extends "layout.html" %}
 {% block content %}
+<style>
+      .card{
+            height:21em;
+            width:18em;
+            margin: 3em;
+      }
+      .card-container{
+            height:12.5em;
+            overflow: scroll;
+            text-overflow: ellipsis;
+      }
+    
+      hr{
+
+      }
+      form{
+            position: inherit;
+            bottom:.5em;
+      }
+      input[type=submit]{
+            position: absolute;
+            color:white;
+            background-color: #1E90FF;
+            border-radius: 5px;
+            text-decoration: none;
+            border:none;
+            left:5em;
+            bottom:1em;
+      }
+      
+</style>
+<div class="container text-center" style="color:white;text-align:center;">
 {% if user_id%}
-<h1>{{user_id}}</h1><br>
+<h1>User ID: {{user_id}}</h1><br>
 {% endif%}
-<h2>{{model}}</h2><br>
-<h5>Predicitons made in {{time}} seconds</h5>
-<table>
-<th></th>
-<th>ID</th>
-<th>NAME</th>
-<th>DESCRIPTION</th>
-<th>INGREDIENTS</th>
- {% for index,row in df.iterrows() %}
-  <tr> <td>{{index + 1}}</td>
-        {%for col in df.columns%}
-        <td>{{row[col]}}</td>
-        {% endfor %}
-  </tr>
- {% endfor %}
-</table>
+<h2>Model Used: {{model}}</h2><br>
+<h5>Displaying 9 of {{n}} recommendations generated in <br><strong>{{time}}</strong> seconds</h5>
+</div>
+<div class="container">
+      <div class="row">
+            {% for ind, row in df[:3].iterrows()%}
+            <div class="col-4 g-0">
+                  <div class="card">
+                        <div class="card-body">
+                              <h5 class="card-title text-center">{{row['name']}}</h5><hr>
+                              <div class='card-container'>
+                                    <p class="card-text">{{row['description']}}</p>
+                              </div>
+                              <form action='/recipe' method='post'>
+                              <input type='hidden' name='recipe_id' value={{row['id']}}>
+                              <input type=submit value='See Full Recipe'>
+                              </form>
+                          </div>
+                  </div>
+            </div>
+            {% endfor %}
+      </div>
+      <div class="row">
+            {% for ind, row in df[3:6].iterrows()%}
+            <div class="col-4 g-0">
+                  <div class="card">
+                        <div class="card-body">
+                              <h5 class="card-title text-center">{{row['name']}}</h5><hr>
+                              <div class='card-container'>
+                                          <p class="card-text">{{row['description']}}</p>
+                              </div>
+                              <form action='/recipe' method='post'>
+                              <input type='hidden' name='recipe_id' value={{row['id']}}>
+                              <input type=submit value='See Full Recipe'>
+                              </form>
+                          </div>
+                  </div>
+            </div>
+            {% endfor %}
+
+      </div>
+      <div class="row">
+            {% for ind, row in df[6:9].iterrows()%}
+            <div class="col-4 g-0">
+                  <div class="card">
+                        <div class="card-body">
+                              <h5 class="card-title text-center">{{row['name']}}</h5><hr>
+                              <div class='card-container'>
+                                    <p class="card-text">{{row['description']}}</p>
+                              </div>
+                              <form action='/recipe' method='post'>
+                              <input type='hidden' name='recipe_id' value={{row['id']}}>
+                              <input type=submit value='See Full Recipe'>
+                              </form>
+                          </div>
+                  </div>
+            </div>
+            {% endfor %}
+      </div>
+</div>
+
 
 
 {% endblock content %}
