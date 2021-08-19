@@ -6,6 +6,11 @@ def features_as_string(row):
     """
     takes a row from a dataframe and returns a comma separated string of the values
     formatted for a sql query
+        PARAMETERS:
+            row - pandas.DataFrame - a row from a dataframe
+        RETURNS:
+            string - string - a string that represents all the data in the column
+                              formatted to a SQL insert statement
     """
     string = ''
     for val in row:

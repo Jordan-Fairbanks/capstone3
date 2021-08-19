@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import time
 import string
-import nltk
+from nltk.corpus import stopwords
 from flask import Flask, render_template, request, url_for
 from surprise import dump
 from sklearn.metrics.pairwise import cosine_similarity
@@ -12,20 +12,31 @@ from sklearn.feature_extraction.text import CountVectorizer
 def fetch_recipe(id_num):
     """
     takes a recipe id, queries the database, and returns a dictionary of the values
+        PARAMETERS:
+            id_num - int - an recipe id number to look up
+        RETURNS:    
+            recipe - dict - the information from the desired row in the database 
+
     """
-    cur.execute("""SELECT name,
+    cur.execute(f"""SELECT name,
                           minutes, 
                           tags,
                           description, 
                           ingredients 
-                     FROM raw_recipes
-                     WHERE id = %s""" % (str(id_num)))
+                     FROM raw_recipe
+                     WHERE id = {id_num}""")
     fetch = cur.fetchall()[0]
-    return {'name':fetch[0],'minutes':fetch[1],'tags':fetch[2],'description':fetch[3],'ingedients':fetch[4]}
+    recipe = {'name':fetch[0],'minutes':fetch[1],'tags':fetch[2],'description':fetch[3],'ingedients':fetch[4]}
+    return recipe
 
 def create_recipe_df(recommendations):
     """
     takes a list of recipe id numbers and creates a dataframe from the sql database 
+        PARAMETERS:
+            recommendations - list(int) - a list of recipe id numbers that correspond to recipe
+                                          ids in the database
+        RETURNS:
+            df - pandas.DataFrame - a dataframe with selected information from the recipe table
     """
     df = pd.DataFrame(data=None, columns=['name','minutes','tags','description','ingredients'])
     for recipe_id in recommendations:
@@ -33,27 +44,20 @@ def create_recipe_df(recommendations):
         df = df.append(recipe, ignore_index=True)
     return df
 
-def fetch_recommendations(id_num, model, n=10):
-    """
-    takes a user id number and returns a list of recipe ids from the predictions DataFrame
-    """
-    table_dict = {'svd':'svd_recommendations',
-                'nmf':'nmf_recommendations',
-                'knnb':'knnb_recommendations',
-                'knnwm':'knnwm_recommendations',
-                'coclust':'coclust_recommendations',
-                'slope1':'slope1_recommendations'}
-
-    cur.execute(f"""SELECT recommendation FROM {table_dict[model]}
-                    WHERE id = {id_num}""")
-    recs = cur.fetchall()[0][0]
-    split = recs.split(',')
-    return [int(id_num) for id_num in split]
 
 def generate_recommendations(uid, model_type, thresh=4.5, n=10):
     """
     takes a user id that the model was trained on and makes predictions for a set
     of recipes in the dataset, then compares those the threshold and returns n recipe ids
+        PARAMETERS:
+            uid - int - user id from the training data
+            model_type - str - a string representing the underlying algorithm powering the model
+            thresh - int - the threshold to compare a predicted rating when compling recommendations
+            n - int - number of recommendations to return
+        RETURNS:
+            recommendations - list(int) - a list of recommended recipe id numbers
+            runtime - float - time (in seconds) it takes to make 5000 predictions
+            num_recommendations - int - the total number of predictions generated above the threshold
     """
     model_dict = {'svd':'../models/SVD_model',
                   'nmf':'../models/NMF_model',
@@ -72,11 +76,18 @@ def generate_recommendations(uid, model_type, thresh=4.5, n=10):
         predictions[ind] = model.predict(uid,iid)[3]
     end = time.time()
     indices = predictions > thresh
-    return iids[indices][:n], round(end - start, 4)
+    runtime = round(end-start,4)
+    num_recommendations = len(iids[indices])
+    recommendations = iids[indices][:n]
+    return recommendations, runtime, num_recommendations
 
 def reformat(id_list):
     """
     takes a list of id numbers (as strings) and reformats to a string for a sql query
+        PARAMETERS:
+            id_list - list(str) - a list of id numbers to be reformatted
+        RETURNS:
+            string - str - a string of comma separated values
     """
     string = ""
     for idn in id_list:
@@ -86,8 +97,13 @@ def reformat(id_list):
 
 def bind(x, y):
     """
-    takes to interables and binds them as a list of tuples, just like the zip() function
+    takes two interables and binds them as an iterable of tuples, just like the zip() function
     but it returns a tuple object
+        PARAMETERS:
+            x - list or array like object with length n
+            y - list of array like object with length n
+        RETURNS:
+            bound - tuple(tuple) - a tuple containing tuples of paired elements in x and y
     """
     bound = []
     for ind, val in enumerate(x):
@@ -98,6 +114,13 @@ def bind(x, y):
 def get_neighbors(vector, model_type, n=5):
     """
     takes a vector returns similar users from the predictions table
+        PARAMETERS:
+            vector - numpy.array - a vector representing the ratings from selected recipes
+            model_type - str - a string representing the algorithm powering the model
+            n - int - the number of nieghbors to return
+        RETURNS:
+            neighbors - list(int) - a list of user id numbers which represent users with 
+                                    the closest ratings to vector
     """
     table_dict = {'svd':'svd_predictions',
                 'nmf':'nmf_predictions',
@@ -113,7 +136,8 @@ def get_neighbors(vector, model_type, n=5):
     predictions = info[:,1:]
     similarities = cosine_similarity(predictions, vector.reshape(1,-1))
     indices = similarities.flatten().argsort()[::-1][:n]
-    return uids[indices]
+    neighbors = uids[indices]
+    return neighbors
     
 
 
@@ -121,7 +145,14 @@ def predict_vector(neighbor_id_list, model_type, n=9):
     """
     takes a list of ids and returns recommendations for the user
     the function plugs the ids into the model and makes predictions 
-
+        PARAMETERS:
+            neighbor_id_list - list(int) - a list of user ids
+            model_type - str - a string representing the algorithm to power the model
+            n - int - the number of recommendations to return
+        RETURNS:
+            recommendations - list(int) - a list of recommended recipe id numbers
+            runtime - float - time (in seconds) it took to make 100 predictions
+            n_recs - int - number of predictions the model makes that are above a 4.5 
     """
     # select which model to use
     model_dict = {'svd':'../models/SVD_model',
@@ -145,13 +176,21 @@ def predict_vector(neighbor_id_list, model_type, n=9):
     end = time.time()
     composite = full_neighbor_vectors.mean(axis=0)
     indices = composite.argsort()[::-1]
-    return ids[indices][:n], round(end-start, 3)
+    runtime = round(end-start,4)
+    n_recs = (composite > 4.5).astype(int).sum()
+    recommendations = ids[indices][:n]
+    return recommendations, runtime, n_recs
 
 
 def create_recipe_df(recipe_id_list):
     """
     takes a list of recipe ids and returns the desired information from
     the sql database as a pandas dataframe
+        PARAMETERS:
+            recipe_id_list - list(int) - a list of recipe id numbers
+        RETURNS:
+            df - pandas.DataFrame - a dataframe where each row corresponds to the id number
+                                    from recipe_id_list
     """
     df = pd.DataFrame(data=None, columns=['id','name','description','tags','ingredients'])
     for id_num in recipe_id_list:
@@ -163,6 +202,11 @@ def create_recipe_df(recipe_id_list):
 def recipe_dict_for_display(recipe_id):
     """
     takes a recipe id number and returns a dictionary with the desired information
+        PARAMETERS:
+            recipe_id - int - a recipe id number
+        RETURNS:
+            recipe_ifo - dict - a dictionary containing the desired information from the 
+                                database
     """
     recipe_info = {}
     cur.execute(f"""SELECT name,
@@ -187,6 +231,11 @@ def recipe_dict_for_display(recipe_id):
 def get_most_popular():
     """
     returns a preset list of recipe ids from popular recipes
+        PARAMETERS:
+            None
+        RETURNS:
+            presets - list(int) - a list of curated recipe id numbers, chosen to explore the
+                                  taste/eating habits of a user 
     """
     presets = [419298, 102114, 297701, 232044, 271471, 217489, 493687, 82998, 471951, 109146, 96210,444189]
     return presets
@@ -194,6 +243,11 @@ def get_most_popular():
 def sort_by_category(recipe_ids):
     """
     takes a list of recipe ids and sorts the ids into six categories
+        PARAMETERS:
+            recipe_ids - list(int) - a list of recipe id numbers
+        RETURNS:
+            courses - tuple(list(int)) - a tuple of lists of recipe id numbers, split into
+                                         six different courses 
     """
     df = create_recipe_df(recipe_ids)
     appetizers, sides, mains, condiments, beverages, desserts = [],[],[],[],[],[]
@@ -225,14 +279,22 @@ def sort_by_category(recipe_ids):
             elif tag in des_tags:
                 desserts.append(row['id'])
                 break
-    return (appetizers, sides, mains, condiments, beverages, desserts)
+    courses = (appetizers, sides, mains, condiments, beverages, desserts)
+    return courses
 
 def analyze_ingredients(recipes_sorted_by_category):
     """
     takes a tuple of lists of recipe ids and analyzes the most common ingredients for each
     set and returns a list of lists of the most commonly recommended ingredients for each category
+        PARAMETERS:
+            recipes_sorted_by_category - tuple(list(int)) - a tuple of lists of recipe id numbers
+                                                            sorted into courses (from sort_by_category())
+        RETURNS:
+            cat_list - list(list(str)) - list of lists of the top twenty most recommended items
+                                         for each course
+            runtime - float - time (in seconds) it took to generate all the ingredient lists
     """
-    stopWords = set(nltk.corpus.stopwords.words('english'))
+    stopWords = set(stopwords.words('english'))
     extra_stops = ['sauce','meat','oil','reduced','grill','grilled','hidden','mix','seasoning','heavy','head','active',
                     'marinated','nonfat','healthy','light','long','karo','old','original','non','liquid','obrien','leave',
                     'medium','well','rare','new','dry','accent','powder','pam','prepared','low','packed','shortening','salt',
@@ -269,11 +331,13 @@ def analyze_ingredients(recipes_sorted_by_category):
         category = all_ingredients[most_frequent[0]][0]
         cat_list.append(category[:20])
     end = time.time()
-    return cat_list , round(end-start, 3)
+    runtime = round(end-start, 4)
+    return cat_list , runtime
+
+
 # connect to database
 conn = psycopg2.connect(dbname='Food', user='postgres', password='galvanize', host='localhost', port='5432')
 cur = conn.cursor()
-nltk.download('stopwords')
 
 app = Flask(__name__)
 
@@ -309,9 +373,9 @@ def recommend():
                        request.form["id11"]])
     model = request.form['select_model']
     neighbors = get_neighbors(vector, model)
-    recommendation_ids, run_time = predict_vector(neighbors, model, n=9)
+    recommendation_ids, run_time,n_recs = predict_vector(neighbors, model, n=9)
     df = create_recipe_df(recommendation_ids)
-    return render_template('results.html', df=df, user_id=None, model=display_dict[model], n=1000,time=run_time)
+    return render_template('results.html', df=df, user_id=None, model=display_dict[model], n=n_recs,time=run_time)
 
 @app.route('/search', methods=['GET'])
 def search():
@@ -327,9 +391,9 @@ def results():
                   'slope1':'Slope One'}
     user_id = request.form['user_id']
     model = request.form['model']
-    recs, time = generate_recommendations(user_id, model,n=9)
+    recs, time, n_recs = generate_recommendations(user_id, model,n=9)
     df = create_recipe_df(recs)
-    return render_template('results.html', df=df, user_id=user_id, model=display_dict[model],n=5000, time=time)
+    return render_template('results.html', df=df, user_id=user_id, model=display_dict[model],n=n_recs, time=time)
 
 @app.route('/recipe', methods=["POST"])
 def recipe():
@@ -355,11 +419,11 @@ def generate_menu():
     titles = ["Appetizer","Side","Main","Condiment","Beverage","Dessert"]
     user_id = request.form['user_id']
     model = request.form['model']
-    recs, time = generate_recommendations(user_id, model, n=100)
+    recs, time, n_recs = generate_recommendations(user_id, model, n=100)
     by_category = sort_by_category(recs)
     ingredients, itime = analyze_ingredients(by_category)
     bound = bind(titles, ingredients)
-    return render_template('menu_results.html',ingredients=bound, model=display_dict[model], time=time, itime=itime)
+    return render_template('menu_results.html',ingredients=bound, model=display_dict[model], time=time, itime=itime, n=n_recs)
 
 if __name__ == '__main__':
     app.run(debug=False)

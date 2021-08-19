@@ -13,6 +13,10 @@ from surprise.reader import Reader
 def array_to_string(arr):
     """
     takes a numpy array of integers and converts it to a comma separated string
+    PARAMETERS:
+        arr - numpy array or array-like object of integers
+    RETURNS:
+        string - a comma separated string of the values from arr
     """
     string = ''
     for i in arr:
@@ -23,6 +27,10 @@ def parse(rec_list):
     """
     takes a tuple representing a user id and a list of recommended recipes and returns 
     the recipes id_s as a string
+        PARAMETERS:
+            rec_list - list or array like object of recipe id numbers
+        RETURNS:
+            parsed - a comma separated string of the values from rec_list
     """
     parsed = '\''
     for recipe_id,_ in rec_list:
@@ -36,6 +44,12 @@ def train_and_test_model(trainset, model):
     """
     takes a surprise model with a trainset object and a testset object,
     trains the model, then returns the predictions from the test set 
+        PARAMETERS:
+            trainset - suprise trainset object
+            model - suprise prediction algorithm object
+        RETURNS:
+            predictions - numpy ndarray representing predictions for each user
+            raw_uids - a list of all the user id numbers that the model has seen
     """
     test_ids = [419298, 102114, 297701, 232044, 271471, 217489, 493687, 82998, 471951, 109146, 96210, 444189]
     model.fit(trainset)
@@ -51,6 +65,10 @@ def train_and_test_model(trainset, model):
 def clear_table(table_name):
     """
     takes a table name as input and clears the corresponding from the SQL database
+        PARAMETERS:
+            table_name - string - name of the table to drop
+        RETURNS:
+            None
     """
     # for setting up new models in the pipeline
     cur.execute(f"CREATE TABLE IF NOT EXISTS {table_name} (id INTEGER, num NUMERIC)")
@@ -65,6 +83,12 @@ def clear_table(table_name):
 def dump_model(model, name, path):
     """
     takes a trained model, along with a filename and a path, then dumps the model
+        PARAMETERS:
+            model - the trained suprise model object to be saved
+            name - string - the name of the file to save to
+            path - string - the path to the directory in which the file will be saved  
+        RETURNS:
+            None
     """
     file_name = os.path.expanduser(path+name)
     dump.dump(file_name, algo=model)
@@ -74,6 +98,12 @@ def dump_model(model, name, path):
 def create_table(table, columns):
     """
     creates a tabe in the sql database
+        PARAMETERS:
+            table - string - name of the table to create
+            columns - string - a string representing the column names and datatypes 
+                               for the table
+        RETURNS:
+            None
     """
     cur.execute(f"CREATE TABLE {table}({columns})")
     conn.commit()
@@ -82,6 +112,15 @@ def create_table(table, columns):
 def insert_predictions(table, predictions, uids):
     """
     inserts predictions into a sql table
+        PARAMETERS:
+            table - string - name of the table in which to insert predictions
+            predictions - numpy ndarray - the predictions matrix representing 
+                                          predicted ratings for each user for
+                                          each item
+            uids -  list(int) - a complete list of user id numbers from the
+                                dataset
+        RETURNS:
+            None
     """
     columns = """uid, r_419298, r_102114, r_297701, r_232044, r_271471, 
                r_217489, r_493687, r_82998, r_471951, r_109146, r_96210, r_444189"""
@@ -89,22 +128,6 @@ def insert_predictions(table, predictions, uids):
     for prediction, uid in zip(predictions, uids):
         cur.execute(f"""INSERT INTO {table}({columns})
                         VALUES ({uid},{array_to_string(prediction)})""")
-        i += 1
-    conn.commit()
-    print(f"INSERTED {i} ROWS INTO TABLE {table}")
-    return 
-
-def insert_recommendations(table, recommendations):
-    """
-    inserts predictions into a sql table
-    """
-    cur.execute(f"SELECT * FROM {table} LIMIT 0")
-    description = np.array(cur.description)
-    columns = ', '.join(list(description[:,0]))
-    i = 0
-    for uid, rec_list in recommendations.items():
-        cur.execute(f"""INSERT INTO {table}({columns})
-                        VALUES ({uid},{parse(rec_list)})""")
         i += 1
     conn.commit()
     print(f"INSERTED {i} ROWS INTO TABLE {table}")
@@ -174,6 +197,11 @@ if __name__ == "__main__":
     raw_iids = np.array([trainset.to_raw_iid(iid) for iid in inner_iids], dtype='int32')
     np.savetxt('data/item_ids.txt', raw_iids)
     
+    # print number of unique users and items
+    num_users = trainset.n_users
+    num_items = trainset.n_items
+    print(f"UNIQUE USERS IN TABLE: {num_users}\nUNIQUE ITEMS IN TABLE: {num_items}")
+    
     # First train an SVD algorithm on ratings data (code snippets from surprise documentation)
     svd = SVD()
     svd_predictions, raw_uids = train_and_test_model(trainset, svd)
@@ -235,11 +263,6 @@ if __name__ == "__main__":
     insert_predictions('knnwm_predictions', knnwm_predictions, raw_uids)
     insert_predictions('coclust_predictions', coclust_predictions, raw_uids)
     insert_predictions('slope1_predictions', slope1_predictions, raw_uids)
-
-    # print number of unique users and items
-    num_users = trainset.n_users
-    num_items = trainset.n_items
-    print(f"UNIQUE USERS IN TABLE: {num_users}\nUNIQUE ITEMS IN TABLE: {num_items}")
     
 	# close connection
     conn.close()
